@@ -1,0 +1,88 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    paths:
+      - "**"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: Login to Amazon ECR (if using ECR)
+        run: |
+          aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
+
+      - name: Extract version
+        run: echo "VERSION=$(cat VERSION | tr -d '\n')" >> $GITHUB_ENV
+
+      - name: Extract commit hash and date
+        run: |
+          echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
+
+      - name: Version info
+        run: |
+          echo "VERSION=${VERSION}"
+          echo "COMMIT_HASH=${COMMIT_HASH}"
+          echo "DATE=${DATE}"
+
+      - name: Build Docker Image
+        run: docker build -t stock-analyser .
+
+      - name: Tag and Push Docker Image
+        run: |
+          IMAGE_TAG="${{ secrets.ECR_REPOSITORY }}:${VERSION}-${DATE}-${COMMIT_HASH}"
+          echo "Tagging Docker image with: $IMAGE_TAG"
+          
+          # Vérifier si les variables sont bien définies
+          if [ -z "$VERSION" ] || [ -z "$DATE" ] || [ -z "$COMMIT_HASH" ]; then
+            echo "ERROR: One or more variables are empty!"
+            exit 1
+          fi
+          
+          docker tag stock-analyser "$IMAGE_TAG"
+          docker push "$IMAGE_TAG"
+
+          docker tag stock-analyser "${{ secrets.ECR_REPOSITORY }}:latest"
+          docker push "${{ secrets.ECR_REPOSITORY }}:latest"
+
+  # test:
+  #   runs-on: ubuntu-latest
+  #   needs: build-and-push
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+      
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: '3.11'
+
+  #     - name: Install dependencies
+  #       run: |
+  #         pip install -r requirements.txt
+  #         pip install pytest
+
+  #     - name: Run tests
+  #       run: pytest
+
