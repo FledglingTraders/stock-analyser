@@ -52,7 +52,7 @@ jobs:
             echo "Skipping workflow as the branch is not main."
             exit 0
           fi
-
+          echo "DEPLOY_ENV is set to: $DEPLOY_ENV"
       - name: Build Docker Image
         run: docker build -t stock-analyser .
 
