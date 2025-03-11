@@ -77,6 +77,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: FledglingTraders/stock-analyser-deploy
+          path: stock-analyser-deploy
 
       - name: Configure Git
         run: |
@@ -85,13 +86,13 @@ jobs:
 
       - name: Update docker-compose.yml
         run: |
-          DEPLOY_FOLDER="${{ github.workspace }}/${DEPLOY_ENV}"
+          DEPLOY_FOLDER="${{ github.workspace }}/stock-analyser-deploy/${DEPLOY_ENV}"
           COMPOSE_FILE="$DEPLOY_FOLDER/docker-compose.yml"
-
+      
           if [[ -f "$COMPOSE_FILE" ]]; then
             sed -i "s|image: .*|image: ${{ secrets.ECR_REPOSITORY }}:${IMAGE_TAG}|" "$COMPOSE_FILE"
           else
-            echo "ERROR: docker-compose.yml not found!"
+            echo "ERROR: docker-compose.yml not found at $COMPOSE_FILE!"
             exit 1
           fi
 
