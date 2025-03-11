@@ -78,7 +78,12 @@ class DataCollector:
     
     @staticmethod
     @time_execution
-    def fetch_historical_data_of_ticker(app_config: Dict, ticker: str, start_date: str = None, end_date: str = None) -> List:
+    def fetch_historical_data_of_ticker(
+            app_config: Dict,
+            ticker: str,
+            start_date: str = None,
+            end_date: str = None) -> List:
+
         fmp_config = app_config.get('API_KEYS', {}).get('FMP', {})
         base_url = fmp_config.get('URL')
         api_token = fmp_config.get('API_TOKEN')
@@ -88,47 +93,57 @@ class DataCollector:
         if start_date and end_date:
             date_range = f"&from={start_date}&to={end_date}"
 
-        logger.info(f"Get metadata for ticker {ticker} ...")
-        ticker_data = DataCollector.fetch_stock_metadata(
-            ticker=ticker['symbol'], app_config=app_config)
-        StockDataHelper.persist_stock_data(stock_data=ticker_data)
-        logger.info(f"Metadata for ticker {ticker} inserted successfully.")
-
         logger.info(f"Get historical data for ticker {ticker} ...")
         try:
             # Fetch historical OHLCV data
             historical_data = DataCollector.get_ohlcv_data(
                 base_url=base_url,
-                ticker=ticker['symbol'],
+                ticker=ticker,
                 api_token=api_token,
                 date_range=date_range
             )
+            
+            if not historical_data:
+                logger.warning(f"Failed to fetch historical data for {ticker}.")
+                return None
+            
+            # Remove invalid data (zero volume or identical OHLC values)
+            historical_data = [
+                record for record in historical_data
+                if record.get('volume', 0) > 0 and not (
+                    record.get('open') == record.get('high') == record.get('low') == record.get('close')
+                )
+            ]
+
+            if not historical_data:
+                logger.warning(f"All retrieved OHLCV data for {ticker} was invalid. Skipping.")
+                return None
 
             # Fetch technical indicators
             rsi_data = DataCollector.get_tech_indicator_data(
                 base_url=base_url,
-                ticker=ticker['symbol'],
+                ticker=ticker,
                 api_token=api_token,
                 date_range=date_range,
                 indicator_type=StockTechnicalIndicator.RSI.value
             )
             macd_data = DataCollector.get_tech_indicator_data(              
                 base_url=base_url,
-                ticker=ticker['symbol'],
+                ticker=ticker,
                 api_token=api_token,
                 date_range=date_range,
                 indicator_type=StockTechnicalIndicator.MACD.value
             )
             sma_data = DataCollector.get_tech_indicator_data(
                 base_url=base_url,
-                ticker=ticker['symbol'],
+                ticker=ticker,
                 api_token=api_token,
                 date_range=date_range,
                 indicator_type=StockTechnicalIndicator.SMA.value
             )
             bollinger_data = DataCollector.get_tech_indicator_data(
                 base_url=base_url,
-                ticker=ticker['symbol'],
+                ticker=ticker,
                 api_token=api_token,
                 date_range=date_range,
                 indicator_type=StockTechnicalIndicator.BOLLINGER.value
@@ -136,7 +151,7 @@ class DataCollector:
 
             # Prepare the list for formatted historical data
             formatted_historical_data = DataCollector.merge_technical_indicator_into_historical_data(
-                ticker=ticker['symbol'],
+                ticker=ticker,
                 historical_data=historical_data,
                 rsi_data=rsi_data,
                 macd_data=macd_data,
@@ -164,8 +179,14 @@ class DataCollector:
     @staticmethod
     def get_tech_indicator_data(base_url: str, ticker: str, api_token: str, date_range: str = None, indicator_type: str = None) -> List:
         url = f"{base_url}/technical_indicator/daily/{ticker}?type={indicator_type}&apikey={api_token}{date_range}"
-        indicator_data = ApisHandler.get(url=url)
-        return indicator_data
+        try:
+            indicator_data = ApisHandler.get(url=url)
+            return indicator_data
+        except HttpErrorException as http_error:
+            logger.error(f"Failed to fetch {indicator_type} data for {ticker}. HTTP Error: {http_error}")
+        except CustomException as error:
+            logger.error(f"Failed to fetch {indicator_type} data for {ticker}. Error: {error}")
+        return []
 
     @staticmethod
     def merge_technical_indicator_into_historical_data(

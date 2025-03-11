@@ -1,3 +1,3 @@
-stock-analyser-lib==0.0.9
+stock-analyser-lib==0.0.10
 pandas
 requests
