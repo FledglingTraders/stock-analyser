@@ -19,7 +19,16 @@ pip config set global.index-url https://aws:$CODEARTIFACT_AUTH_TOKEN@$DOMAIN-$DO
 # Print a message
 echo "✅ Pip config updated with CodeArtifact repository."
 
-pip install stock-analyser-lib
+# Extract the exact version of stock-analyser-lib from requirements.txt
+STOCK_ANALYSER_VERSION=$(grep '^stock-analyser-lib==' requirements.txt | cut -d '=' -f3)
+
+if [ -n "$STOCK_ANALYSER_VERSION" ]; then
+    echo "📦 Installing stock-analyser-lib==$STOCK_ANALYSER_VERSION"
+    pip install "stock-analyser-lib==$STOCK_ANALYSER_VERSION"
+else
+    echo "⚠️ stock-analyser-lib version not found in requirements.txt. Installing latest version."
+    pip install stock-analyser-lib
+fi
 
 export PYTHONPATH=$(pwd)
 python src/main.py
