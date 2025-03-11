@@ -23,7 +23,7 @@ class StockAnalyser():
 
         stock_list = DataCollector.fetch_nasdaq_tickers_list(
             app_config=app_config)
-        breakpoint()
+
         if stock_list and len(stock_list) > 0:
             
             for stock in stock_list[:3]:
