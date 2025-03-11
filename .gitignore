@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 
 # Ignore config file containing sensitive data
+/config/
 config.json
 
 # Ignore virtual environments (if applicable)
