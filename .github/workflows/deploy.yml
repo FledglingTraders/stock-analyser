@@ -45,9 +45,11 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" == "main" ]]; then
             echo "IMAGE_TAG=${VERSION}-alpha-${DATE}-${COMMIT_HASH}" >> $GITHUB_ENV
             echo "DEPLOY_ENV=develop" >> $GITHUB_ENV
+            echo "DEPLOY_ENV=$(printenv DEPLOY_ENV)"
           elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "IMAGE_TAG=${VERSION}-${DATE}-${COMMIT_HASH}" >> $GITHUB_ENV
             echo "DEPLOY_ENV=prod" >> $GITHUB_ENV
+            echo "DEPLOY_ENV=$(printenv DEPLOY_ENV)"
           else
             echo "Skipping workflow as the branch is not main."
             exit 0
