@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       DEPLOY_ENV: ${{ steps.determine_tag.outputs.DEPLOY_ENV }}
-      FULL_IMAGE_TAG: ${{ steps.tag_and_push.outputs.FULL_IMAGE_TAG }}
+      IMAGE_TAG: ${{ steps.tag_and_push.outputs.IMAGE_TAG }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -65,8 +65,7 @@ jobs:
         id: tag_and_push
         run: |
           FULL_IMAGE_TAG="${{ secrets.ECR_REPOSITORY }}:${IMAGE_TAG}"
-          echo "*****************FULL_IMAGE_TAG=${FULL_IMAGE_TAG}*************************"
-          echo "FULL_IMAGE_TAG=${FULL_IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           echo "Tagging Docker image with: $FULL_IMAGE_TAG"
 
           docker tag stock-analyser "$FULL_IMAGE_TAG"
@@ -101,9 +100,10 @@ jobs:
       - name: Update docker-compose.yml
         run: |
           COMPOSE_FILE="${{ needs.build-and-push.outputs.DEPLOY_ENV }}/docker-compose.yml"
-          if [[ -f "$COMPOSE_FILE" ]]; then
-            echo "*****************FULL_IMAGE_TAG=${{ needs.build-and-push.outputs.FULL_IMAGE_TAG }}*************************"
-            sed -i "s|image: .*|image: ${{ needs.build-and-push.outputs.FULL_IMAGE_TAG }}|" "$COMPOSE_FILE"
+          if [[ -f "$COMPOSE_FILE" ]]; then 
+            
+            echo "*****************FULL_IMAGE_TAG=${{ secrets.ECR_REPOSITORY }}:${{ needs.build-and-push.outputs.IMAGE_TAG }}************************"
+            sed -i "s|image: .*|image: ${{ secrets.ECR_REPOSITORY }}:${{ needs.build-and-push.outputs.IMAGE_TAG }}|" "$COMPOSE_FILE"
           else
             echo "ERROR: docker-compose.yml not found at $COMPOSE_FILE!"
             exit 1
@@ -114,17 +114,5 @@ jobs:
         run: |
           git remote set-url origin git@github.com:FledglingTraders/stock-analyser-deploy.git
           git add .
-          git commit -m "Update docker image to ${{ needs.build-and-push.outputs.FULL_IMAGE_TAG }}"
+          git commit -m "Update docker image to ${{ secrets.ECR_REPOSITORY }}:${{ needs.build-and-push.outputs.IMAGE_TAG }}"
           git push origin main
-
-
-
-
-
-
-
-
-
-
-
-
