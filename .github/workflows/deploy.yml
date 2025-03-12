@@ -89,12 +89,8 @@ jobs:
 
       - name: Update docker-compose.yml
         run: |
-          ls
-          echo "DEPLOY_ENV from previous job: ${{ needs.build-and-push.outputs.DEPLOY_ENV }}"
-          DEPLOY_FOLDER="${{ github.workspace }}/stock-analyser-deploy/${{ needs.build-and-push.outputs.DEPLOY_ENV }}"
-          COMPOSE_FILE="$DEPLOY_FOLDER/docker-compose.yml"
-          #  /home/runner/work/stock-analyser/stock-analyser/stock-analyser-deploy//docker-compose.yml!
-          #  /home/runner/work/stock-analyser/stock-analyser/stock-analyser-deploy/develop/docker-compose.yml!
+          COMPOSE_FILE="${{ needs.build-and-push.outputs.DEPLOY_ENV }}/docker-compose.yml"
+      
           if [[ -f "$COMPOSE_FILE" ]]; then
             sed -i "s|image: .*|image: ${{ secrets.ECR_REPOSITORY }}:${IMAGE_TAG}|" "$COMPOSE_FILE"
           else
