@@ -20,21 +20,22 @@ class StockAnalyser():
         # 5. Use visualisation tools to display the data (powerBI, Tableau, elk etc)
 
 
-
         stock_list = DataCollector.fetch_nasdaq_tickers_list(
             app_config=app_config)
 
         if stock_list and len(stock_list) > 0:
             
-            for stock in stock_list[:3]:
-                stock_metadata = DataCollector.fetch_stock_metadata(
-                    ticker=stock,
-                    app_config=app_config
-                )
-                historical_data = DataCollector.fetch_historical_data_of_ticker(
-                    ticker=stock,
-                    app_config=app_config
-                )
+            for stock in stock_list:
+                if stock == 'AAPL':
+                    stock_metadata = DataCollector.fetch_stock_metadata(
+                        ticker=stock,
+                        app_config=app_config
+                    )
+                    historical_data = DataCollector.fetch_historical_data_of_ticker(
+                        ticker=stock,
+                        app_config=app_config
+                    )
+                
         else:
             logger.error("No stock data found")
             
