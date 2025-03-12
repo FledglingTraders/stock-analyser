@@ -87,7 +87,7 @@ jobs:
 
       - name: Update docker-compose.yml
         run: |
-          echo "DEPLOY_ENV from previous job: ${{ needs.set-env.outputs.DEPLOY_ENV }}"
+          echo "DEPLOY_ENV from previous job: ${{ needs.build-and-push.outputs.DEPLOY_ENV }}"
           DEPLOY_FOLDER="${{ github.workspace }}/stock-analyser-deploy/${DEPLOY_ENV}"
           COMPOSE_FILE="$DEPLOY_FOLDER/docker-compose.yml"
       
