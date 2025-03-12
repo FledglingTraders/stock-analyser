@@ -12,6 +12,8 @@ jobs:
   build-and-push:
     if: github.base_ref == 'main' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    outputs:
+      DEPLOY_ENV: ${{ steps.determine_tag.outputs.DEPLOY_ENV }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,6 +44,7 @@ jobs:
           echo "DATE=$(printenv DATE)"
 
       - name: Determine Tag Name and Deployment Folder
+        id: determine_tag
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" == "main" ]]; then
             echo "IMAGE_TAG=${VERSION}-alpha-${DATE}-${COMMIT_HASH}" >> $GITHUB_ENV
