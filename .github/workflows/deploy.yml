@@ -89,6 +89,7 @@ jobs:
 
       - name: Update docker-compose.yml
         run: |
+          echo "*dev* --> DEPLOY_ENV=$(printenv DEPLOY_ENV)"
           DEPLOY_FOLDER="${{ github.workspace }}/stock-analyser-deploy/${DEPLOY_ENV}"
           COMPOSE_FILE="$DEPLOY_FOLDER/docker-compose.yml"
       
