@@ -101,7 +101,6 @@ jobs:
       - name: Update docker-compose.yml
         run: |
           COMPOSE_FILE="${{ needs.build-and-push.outputs.DEPLOY_ENV }}/docker-compose.yml"
-       
           if [[ -f "$COMPOSE_FILE" ]]; then
             echo "*****************FULL_IMAGE_TAG=${{ needs.build-and-push.outputs.FULL_IMAGE_TAG }}*************************"
             sed -i "s|image: .*|image: ${{ needs.build-and-push.outputs.FULL_IMAGE_TAG }}|" "$COMPOSE_FILE"
@@ -115,7 +114,7 @@ jobs:
         run: |
           git remote set-url origin git@github.com:FledglingTraders/stock-analyser-deploy.git
           git add .
-          git commit -m "Update docker image to ***:${IMAGE_TAG}"
+          git commit -m "Update docker image to ${{ needs.build-and-push.outputs.FULL_IMAGE_TAG }}"
           git push origin main
 
 
