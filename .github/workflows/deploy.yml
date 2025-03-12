@@ -61,6 +61,7 @@ jobs:
 
       - name: Tag and Push Docker Image
         run: |
+          echo "*dev* --> DEPLOY_ENV=$(printenv DEPLOY_ENV)"
           FULL_IMAGE_TAG="${{ secrets.ECR_REPOSITORY }}:${IMAGE_TAG}"
           echo "Tagging Docker image with: $FULL_IMAGE_TAG"
 
