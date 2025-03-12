@@ -65,6 +65,7 @@ jobs:
         id: tag_and_push
         run: |
           FULL_IMAGE_TAG="${{ secrets.ECR_REPOSITORY }}:${IMAGE_TAG}"
+          echo "*****************FULL_IMAGE_TAG=${FULL_IMAGE_TAG}*************************"
           echo "FULL_IMAGE_TAG=${FULL_IMAGE_TAG}" >> $GITHUB_OUTPUT
           echo "Tagging Docker image with: $FULL_IMAGE_TAG"
 
@@ -85,6 +86,13 @@ jobs:
         with:
           repository: FledglingTraders/stock-analyser-deploy
 
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
       - name: Configure Git
         run: |
           git config --global user.name "GitHub Actions"
@@ -95,6 +103,7 @@ jobs:
           COMPOSE_FILE="${{ needs.build-and-push.outputs.DEPLOY_ENV }}/docker-compose.yml"
        
           if [[ -f "$COMPOSE_FILE" ]]; then
+            echo "*****************FULL_IMAGE_TAG=${{ needs.build-and-push.outputs.FULL_IMAGE_TAG }}*************************"
             sed -i "s|image: .*|image: ${{ needs.build-and-push.outputs.FULL_IMAGE_TAG }}|" "$COMPOSE_FILE"
           else
             echo "ERROR: docker-compose.yml not found at $COMPOSE_FILE!"
@@ -102,9 +111,21 @@ jobs:
           fi
           cat "$COMPOSE_FILE"
 
-      - name: Commit and Push Changes
+      - name: Push Changes
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.DEPLOY_REPO_PAT }}@github.com/FledglingTraders/stock-analyser-deploy.git
+          git remote set-url origin git@github.com:FledglingTraders/stock-analyser-deploy.git
           git add .
-          git commit -m "Update docker image to ${{ needs.build-and-push.outputs.FULL_IMAGE_TAG }}"
+          git commit -m "Update docker image to ***:${IMAGE_TAG}"
           git push origin main
+
+
+
+
+
+
+
+
+
+
+
+
