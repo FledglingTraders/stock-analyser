@@ -4,7 +4,7 @@ from settings.shared import logger
 
 
 def main():
-    logger.info('Start processing')
+    logger.info("Start processing")
     set_app_config()
     app_config = get_app_config()
     analyser = StockAnalyser()

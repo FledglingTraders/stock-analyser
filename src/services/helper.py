@@ -5,7 +5,7 @@ import pandas as pd
 
 class HelperMethods:
     @staticmethod
-    def merge_indicator_data(indicators: Dict={}):
+    def merge_indicator_data(indicators: Dict = {}):
         # Convert all indicator lists to DataFrames
         df_rsi = pd.DataFrame(indicators["rsi"])
         # df_macd = pd.DataFrame(indicators["macd"])
@@ -37,9 +37,13 @@ class HelperMethods:
         return df
 
     @staticmethod
-    def filter_tickers_by_exchange(exchange_name: str="", tickers: List=[]):
-        return [ticker.get('symbol') for ticker in tickers if ticker.get('exchangeShortName') == exchange_name]
-    
+    def filter_tickers_by_exchange(exchange_name: str = "", tickers: List = []):
+        return [
+            ticker.get("symbol")
+            for ticker in tickers
+            if ticker.get("exchangeShortName") == exchange_name
+        ]
+
     @staticmethod
     def persist_on_csv(tickers: List[Dict]):
         df = pd.DataFrame(tickers)
