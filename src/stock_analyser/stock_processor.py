@@ -1,6 +1,7 @@
 from typing import Dict
 
 from src.services.data_collector import DataCollector
+from src.services.technical_indicators import TechnicalIndicators
 from src.settings.shared import get_app_config
 from src.settings.shared import logger
 from src.services.helper import HelperMethods
@@ -11,7 +12,16 @@ class StockAnalyser():
         self.app_config = get_app_config()
 
 
-    def start_process(self, app_config: dict = {}):
+    def start_process(
+            self, 
+            app_config: dict = {},
+            start_date: str = None,
+            end_date: str = None):
+        def __init__(self) -> None:
+            self.app_config = get_app_config()
+            self.start_date = start_date
+            self.end_date = end_date
+
         # TODO
         # 1. Fetch the list of NASDAQ tickers
         # 2. Persist the list of NASDAQ tickers on my database using stock_analyser_lib
@@ -31,7 +41,7 @@ class StockAnalyser():
                         ticker=stock,
                         app_config=app_config
                     )
-                    historical_data = DataCollector.fetch_historical_data_of_ticker(
+                    historical_data= DataCollector.fetch_historical_and_technical_indicators(
                         ticker=stock,
                         app_config=app_config
                     )

@@ -10,7 +10,9 @@ from src.settings.shared import logger
 from src.services.helper import HelperMethods
 from src.utils.decorators import time_execution
 from src.model.persistor import StockDataHelper, HistoricalDataHelper
-from src.enums.stock_indicator import StockTechnicalIndicator
+
+from src.services.technical_indicators import TechnicalIndicators
+
 
 
 class DataCollector:
@@ -78,7 +80,7 @@ class DataCollector:
     
     @staticmethod
     @time_execution
-    def fetch_historical_data_of_ticker(
+    def fetch_historical_and_technical_indicators(
             app_config: Dict,
             ticker: str,
             start_date: str = None,
@@ -96,7 +98,8 @@ class DataCollector:
         logger.info(f"Get historical data for ticker {ticker} ...")
         try:
             # Fetch historical OHLCV data
-            historical_data = DataCollector.get_ohlcv_data(
+            
+            historical_data = TechnicalIndicators.get_ohlcv_data(
                 base_url=base_url,
                 ticker=ticker,
                 api_token=api_token,
@@ -118,49 +121,26 @@ class DataCollector:
             if not historical_data:
                 logger.warning(f"All retrieved OHLCV data for {ticker} was invalid. Skipping.")
                 return None
+            
+            df = pd.DataFrame(historical_data)
+            df["date"] = pd.to_datetime(df["date"])
+            df.set_index("date", inplace=True)
+            
+            # ✅ Step 2: Compute SMA manually
+            df["sma_50"] = TechnicalIndicators.compute_sma(df, 50)
+            df["sma_200"] = TechnicalIndicators.compute_sma(df, 200)
 
-            # Fetch technical indicators
-            rsi_data = DataCollector.get_tech_indicator_data(
-                base_url=base_url,
-                ticker=ticker,
-                api_token=api_token,
-                date_range=date_range,
-                indicator_type=StockTechnicalIndicator.RSI.value
-            )
-            macd_data = DataCollector.get_tech_indicator_data(              
-                base_url=base_url,
-                ticker=ticker,
-                api_token=api_token,
-                date_range=date_range,
-                indicator_type=StockTechnicalIndicator.MACD.value
-            )
-            sma_data = DataCollector.get_tech_indicator_data(
-                base_url=base_url,
-                ticker=ticker,
-                api_token=api_token,
-                date_range=date_range,
-                indicator_type=StockTechnicalIndicator.SMA.value
-            )
-            bollinger_data = DataCollector.get_tech_indicator_data(
-                base_url=base_url,
-                ticker=ticker,
-                api_token=api_token,
-                date_range=date_range,
-                indicator_type=StockTechnicalIndicator.BOLLINGER.value
-            )
+            # Fetch Technical Indicators
+            indicators_df = TechnicalIndicators.fetch_all_technical_indicator(base_url, ticker, api_token, date_range)
+            if indicators_df.empty:
+                logger.warning(f"No technical indicators found for {ticker}. Using only OHLCV data.")
+                return df  # Return OHLCV if no indicators are found
 
-            # Prepare the list for formatted historical data
-            formatted_historical_data = DataCollector.merge_technical_indicator_into_historical_data(
-                ticker=ticker,
-                historical_data=historical_data,
-                rsi_data=rsi_data,
-                macd_data=macd_data,
-                sma_data=sma_data,
-                bollinger_data=bollinger_data
-            )
-
+            # Merge OHLCV and Technical Indicators
+            merged_df = df.join(indicators_df, on="date", how="left")
+           
             logger.info(f"Fetched and formatted historical data for {ticker} from {start_date} to {end_date}.")
-            return formatted_historical_data
+            return merged_df
 
         except HttpErrorException as http_error:
             logger.error(f"Failed to fetch historical data for {ticker}. HTTP Error: {http_error}")
@@ -168,25 +148,7 @@ class DataCollector:
             logger.error(f"Failed to fetch historical data for {ticker}. Error: {error}")
 
         return None
-    
-    @staticmethod
-    def get_ohlcv_data(base_url: str, ticker: str, api_token: str, date_range: str = None) -> List:
-        # Fetch historical OHLCV data
-        historical_url = f"{base_url}/historical-price-full/{ticker}?apikey={api_token}{date_range}"
-        historical_response = ApisHandler.get(url=historical_url)
-        return historical_response.get('historical', [])
-    
-    @staticmethod
-    def get_tech_indicator_data(base_url: str, ticker: str, api_token: str, date_range: str = None, indicator_type: str = None) -> List:
-        url = f"{base_url}/technical_indicator/daily/{ticker}?type={indicator_type}&apikey={api_token}{date_range}"
-        try:
-            indicator_data = ApisHandler.get(url=url)
-            return indicator_data
-        except HttpErrorException as http_error:
-            logger.error(f"Failed to fetch {indicator_type} data for {ticker}. HTTP Error: {http_error}")
-        except CustomException as error:
-            logger.error(f"Failed to fetch {indicator_type} data for {ticker}. Error: {error}")
-        return []
+
 
     @staticmethod
     def merge_technical_indicator_into_historical_data(

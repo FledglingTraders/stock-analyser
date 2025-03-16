@@ -1,5 +1,5 @@
 from settings.shared import set_app_config, get_app_config
-from stock_analyser.start_processing import StockAnalyser
+from stock_analyser.stock_processor import StockAnalyser
 from settings.shared import logger
 
 
