@@ -7,4 +7,3 @@ class CustomException(Exception):
 class HttpErrorException(CustomException):
     def __init__(self, message):
         super().__init__(message)
-    
